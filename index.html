@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EMIS Tracker — Pendataan Siswa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-loading" id="appLoading">
+  <div class="app-loading-inner">
+    <div class="spinner"></div>
+    <p>Menghubungkan ke database...</p>
+  </div>
+</div>
+
+<div class="app-shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+      <div class="brand-mark">E</div>
+      <div class="brand-text">
+        <strong>EMIS Tracker</strong>
+        <span>Pendataan Siswa Baru</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">▦</span> Dashboard
+      </button>
+      <button class="nav-item" data-page="schools">
+        <span class="nav-icon">🏫</span> Sekolah Asal
+      </button>
+      <button class="nav-item" data-page="queue">
+        <span class="nav-icon">🗂️</span> Antrian Input
+        <span class="nav-badge" id="queueNavBadge" style="display:none;">0</span>
+      </button>
+      <button class="nav-item" data-page="dailycheck">
+        <span class="nav-icon">📋</span> Cek Harian EMIS
+        <span class="nav-badge" id="dailyCheckNavBadge" style="display:none;">0</span>
+      </button>
+      <button class="nav-item" data-page="students">
+        <span class="nav-icon">🧑‍🎓</span> Siswa
+      </button>
+      <button class="nav-item" data-page="classes">
+        <span class="nav-icon">📚</span> Kelas
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <button class="btn btn-outline btn-block" id="btnResetData">Reset Data</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-col">
+
+    <header class="topbar">
+      <button class="hamburger" id="hamburger" aria-label="Toggle menu">☰</button>
+
+      <div class="global-search">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="globalSearch" placeholder="Cari nama, NISN, sekolah, atau kelas...">
+      </div>
+
+      <div class="topbar-actions">
+        <input type="file" id="fileInput" accept=".xlsx,.xls" hidden>
+        <button class="btn btn-outline" id="btnUpload">⭱ Upload Excel</button>
+        <button class="btn btn-primary" id="btnExport">⭳ Export Excel</button>
+      </div>
+    </header>
+
+    <main class="content" id="content">
+
+      <!-- DASHBOARD PAGE -->
+      <section class="page active" id="page-dashboard">
+        <div class="page-head">
+          <div>
+            <h1>Dashboard</h1>
+            <p class="muted">Ringkasan progres pendataan EMIS siswa baru.</p>
+          </div>
+        </div>
+
+        <div class="cards-grid" id="dashboardCards"></div>
+
+        <div class="charts-grid">
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Siswa per Sekolah</h3>
+              <span class="muted small">Top 10 sekolah dengan siswa terbanyak</span>
+            </div>
+            <div id="chartStudentsPerSchool" class="chart-box"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <h3>Progres EMIS</h3>
+              <span class="muted small">Sekolah &amp; siswa yang sudah masuk EMIS</span>
+            </div>
+            <div id="chartEmisProgress" class="chart-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCHOOLS PAGE -->
+      <section class="page" id="page-schools">
+        <div class="page-head">
+          <div>
+            <h1 id="schoolsPageTitle">Sekolah Asal (TK)</h1>
+            <p class="muted" id="schoolsPageSubtitle">Kelola status ketersediaan sekolah di EMIS.</p>
+          </div>
+          <button class="btn btn-outline" id="btnBackToSchools" style="display:none;">← Semua Sekolah</button>
+        </div>
+
+        <div id="schoolListWrap">
+          <div class="toolbar">
+            <div class="search-mini">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="schoolSearch" placeholder="Cari nama sekolah atau NSM...">
+            </div>
+            <div class="toolbar-right">
+              <select id="schoolTypeFilter">
+                <option value="all">Semua Jenis</option>
+                <option value="TK">TK (Dinas)</option>
+                <option value="RA">RA (Kemenag)</option>
+                <option value="KB">KB</option>
+                <option value="Lainnya">Lainnya</option>
+              </select>
+              <select id="schoolSort">
+                <option value="az">Urutkan A-Z</option>
+                <option value="za">Urutkan Z-A</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-wrap panel">
+            <table class="data-table" id="schoolTable">
+              <thead>
+                <tr>
+                  <th>Nama Sekolah</th>
+                  <th>Jenis</th>
+                  <th>NSM (RA/Kemenag)</th>
+                  <th>Total Siswa</th>
+                  <th>Sudah Masuk</th>
+                  <th>Belum Masuk</th>
+                  <th>Status EMIS</th>
+                  <th>Aksi</th>
+                </tr>
+              </thead>
+              <tbody id="schoolTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="schoolDetailWrap" style="display:none;">
+          <div class="panel" id="schoolDetailInfo" style="margin-bottom:14px;"></div>
+          <div class="toolbar">
+            <div class="search-mini">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="schoolDetailSearch" placeholder="Cari siswa di sekolah ini...">
+            </div>
+            <div class="toolbar-right">
+              <select id="schoolDetailFilter">
+                <option value="all">Semua Status</option>
+                <option value="entered">Sudah Masuk EMIS</option>
+                <option value="not_entered">Belum Masuk EMIS</option>
+              </select>
+            </div>
+          </div>
+          <div class="table-wrap panel">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>NISN</th>
+                  <th>Nama Siswa</th>
+                  <th>Kelas</th>
+                  <th>Status EMIS</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="schoolDetailBody"></tbody>
+            </table>
+
+          </div>
+        </div>
+      </section>
+
+      <!-- QUEUE / ANTRIAN INPUT PAGE -->
+      <section class="page" id="page-queue">
+        <div class="page-head">
+          <div>
+            <h1>Antrian Input EMIS</h1>
+            <p class="muted">Sekolah yang statusnya sudah <strong>Tersedia di EMIS</strong> tapi siswanya belum semua diinput. Urut dari yang paling banyak sisanya.</p>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; gap:10px;">
+          <span class="stat-icon amber">🗂️</span>
+          <div>
+            <div style="font-weight:800; font-size:15px;"><span id="queueCount">0</span> sekolah dalam antrian</div>
+            <div class="small muted">Sekolah otomatis hilang dari daftar ini begitu semua siswanya sudah diinput.</div>
+          </div>
+        </div>
+
+        <div id="queueList"></div>
+      </section>
+
+      <!-- DAILY CHECK PAGE -->
+      <section class="page" id="page-dailycheck">
+        <div class="page-head">
+          <div>
+            <h1>Cek Harian EMIS</h1>
+            <p class="muted">Satu NISN contoh dari tiap sekolah yang <strong>belum tersedia di EMIS</strong> — tinggal salin, tempel ke pencarian EMIS, lalu centang kalau sudah dicek hari ini.</p>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-bottom:16px; display:flex; align-items:center; gap:14px; flex-wrap:wrap;">
+          <span class="stat-icon amber">📋</span>
+          <div style="flex:1; min-width:180px;">
+            <div style="font-weight:800; font-size:15px;">
+              <span id="dailyCheckRemaining">0</span> dari <span id="dailyCheckTotal">0</span> sekolah belum dicek hari ini
+            </div>
+            <div class="small muted">Daftar ini otomatis reset setiap hari — semua centang kembali kosong keesokan harinya.</div>
+          </div>
+          <button class="btn btn-outline btn-sm" id="btnCopyAllDailyCheck">⧉ Salin Semua (Sekolah + NISN)</button>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-mini">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="dailyCheckSearch" placeholder="Cari nama sekolah...">
+          </div>
+          <div class="toolbar-right">
+            <select id="dailyCheckTypeFilter">
+              <option value="all">Semua Jenis</option>
+              <option value="TK">TK (Dinas)</option>
+              <option value="RA">RA (Kemenag)</option>
+              <option value="KB">KB</option>
+              <option value="Lainnya">Lainnya</option>
+            </select>
+            <select id="dailyCheckStatusFilter">
+              <option value="all">Semua</option>
+              <option value="unchecked">Belum Dicek Hari Ini</option>
+              <option value="checked">Sudah Dicek Hari Ini</option>
+            </select>
+          </div>
+        </div>
+
+        <div id="dailyCheckList"></div>
+      </section>
+
+      <!-- STUDENTS PAGE -->
+      <section class="page" id="page-students">
+        <div class="page-head">
+          <div>
+            <h1>Data Siswa</h1>
+            <p class="muted">Seluruh siswa baru beserta status pendataan EMIS.</p>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <div class="search-mini">
+            <span class="search-icon">🔍</span>
+            <input type="text" id="studentSearch" placeholder="Cari NISN, nama, atau sekolah...">
+          </div>
+          <div class="toolbar-right">
+            <select id="studentFilter">
+              <option value="all">Semua Status</option>
+              <option value="entered">Sudah Masuk EMIS</option>
+              <option value="not_entered">Belum Masuk EMIS</option>
+            </select>
+            <select id="studentSort">
+              <option value="az">Nama A-Z</option>
+              <option value="za">Nama Z-A</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="table-wrap panel">
+          <table class="data-table" id="studentTable">
+            <thead>
+              <tr>
+                <th>NISN</th>
+                <th>Nama Siswa</th>
+                <th>Sekolah Asal</th>
+                <th>Kelas</th>
+                <th>Status EMIS</th>
+                <th>Detail</th>
+              </tr>
+            </thead>
+            <tbody id="studentTableBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CLASSES PAGE -->
+      <section class="page" id="page-classes">
+        <div class="page-head">
+          <div>
+            <h1>Kelas</h1>
+            <p class="muted">Distribusi siswa per kelas paralel.</p>
+          </div>
+          <button class="btn btn-outline" id="btnBackToClasses" style="display:none;">← Semua Kelas</button>
+        </div>
+
+        <div id="classGrid" class="cards-grid classes-grid"></div>
+
+        <div id="classDetailWrap" style="display:none;">
+          <div class="toolbar">
+            <div class="search-mini">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="classDetailSearch" placeholder="Cari di kelas ini...">
+            </div>
+          </div>
+          <div class="table-wrap panel">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>NISN</th>
+                  <th>Nama Siswa</th>
+                  <th>Sekolah Asal</th>
+                  <th>Status</th>
+                  <th>Detail</th>
+                </tr>
+              </thead>
+              <tbody id="classDetailBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- STUDENT DETAIL MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box" id="modalBox">
+    <div class="modal-head">
+      <h2 id="modalStudentName">Detail Siswa</h2>
+      <div class="modal-head-actions">
+        <button class="btn btn-outline btn-sm" id="btnPrintModal">🖨 Cetak</button>
+        <button class="modal-close" id="modalClose">✕</button>
+      </div>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="js/utils.js"></script>
+<script src="js/supabase-client.js"></script>
+<script src="js/storage.js"></script>
+<script src="js/seed-data.js"></script>
+<script src="js/excel.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/school.js"></script>
+<script src="js/queue.js"></script>
+<script src="js/dailycheck.js"></script>
+<script src="js/student.js"></script>
+<script src="js/class.js"></script>
+<script src="js/modal.js"></script>
+<script src="js/export.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

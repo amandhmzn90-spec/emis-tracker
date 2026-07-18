@@ -1,0 +1,9 @@
+{
+  "name": "emis-tracker",
+  "private": true,
+  "version": "1.0.0",
+  "description": "EMIS student registration tracker (static HTML/CSS/JS + Supabase).",
+  "scripts": {
+    "build": "node scripts/build.js"
+  }
+}
