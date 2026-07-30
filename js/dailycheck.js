@@ -126,6 +126,7 @@ const DailyCheckModule = (() => {
             ? `<code class="check-nisn">${Utils.esc(r.sampleNisn)}</code>
                <button class="btn btn-outline btn-sm" data-copy="${Utils.esc(r.sampleNisn)}" data-copyschool="${Utils.esc(r.schoolName)}">⧉ Salin NISN</button>`
             : `<span class="small muted">Belum ada NISN siswa</span>`}
+          <button class="btn btn-primary btn-sm" data-mark-available="${Utils.esc(r.schoolName)}">✓ Sudah Tersedia di EMIS</button>
         </div>
       </div>
     `).join("");
@@ -145,6 +146,21 @@ const DailyCheckModule = (() => {
         copyText(nisn).then(() => {
           Utils.toast(`NISN "${nisn}" disalin (${schoolName}).`);
         });
+      });
+    });
+
+    // Lets the admin flip a school straight to "Tersedia di EMIS" from
+    // here, the moment they confirm it in the EMIS search — the school
+    // then naturally drops off this list (it only shows unavailable ones).
+    wrap.querySelectorAll("button[data-mark-available]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const schoolName = e.currentTarget.getAttribute("data-mark-available");
+        Storage.updateSchool(schoolName, { emisAvailable: true });
+        Utils.toast(`"${schoolName}" ditandai sudah tersedia di EMIS.`);
+        render();
+        DashboardModule.render();
+        if (typeof SchoolModule !== "undefined") SchoolModule.render();
+        if (typeof QueueModule !== "undefined") QueueModule.render();
       });
     });
   }
