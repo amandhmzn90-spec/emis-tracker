@@ -236,24 +236,45 @@ const SchoolModule = (() => {
 
     const body = document.getElementById("schoolDetailBody");
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="5"><div class="empty-state">Tidak ada siswa yang cocok.</div></td></tr>`;
+      body.innerHTML = `<tr><td colspan="6"><div class="empty-state">Tidak ada siswa yang cocok.</div></td></tr>`;
       return;
     }
 
-    body.innerHTML = rows.map((s) => `
+    body.innerHTML = rows.map((s) => {
+      const entered = s.emisStatus === "entered";
+      return `
       <tr>
         <td class="cell-strong">${Utils.esc(s.nisn)}</td>
         <td>${Utils.esc(s.nama)}</td>
         <td class="cell-muted">${Utils.esc(s.kelas_paralel)}</td>
-        <td>${s.emisStatus === "entered"
+        <td>${entered
           ? `<span class="badge badge-success"><span class="badge-dot"></span>Sudah Masuk</span>`
           : `<span class="badge badge-warning"><span class="badge-dot"></span>Belum Masuk</span>`}</td>
+        <td>
+          ${entered
+            ? `<button class="btn btn-outline btn-sm" data-mark-entered="${s.id}" data-target="not_entered">↺ Batalkan</button>`
+            : `<button class="btn btn-primary btn-sm" data-mark-entered="${s.id}" data-target="entered">✓ Tandai Sudah Diinput</button>`}
+        </td>
         <td><button class="link-btn" data-detail="${s.id}">Lihat Detail →</button></td>
       </tr>
-    `).join("");
+    `;
+    }).join("");
 
     body.querySelectorAll("button[data-detail]").forEach((btn) => {
       btn.addEventListener("click", (e) => ModalModule.open(e.target.getAttribute("data-detail")));
+    });
+
+    body.querySelectorAll("button[data-mark-entered]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        const id = e.currentTarget.getAttribute("data-mark-entered");
+        const target = e.currentTarget.getAttribute("data-target");
+        Storage.updateStudent(id, { emisStatus: target });
+        Utils.toast(target === "entered" ? "Siswa ditandai sudah diinput EMIS." : "Status siswa dibatalkan.");
+        renderDetail();
+        DashboardModule.render();
+        if (typeof StudentModule !== "undefined") StudentModule.render();
+        if (typeof QueueModule !== "undefined") QueueModule.render();
+      });
     });
   }
 
