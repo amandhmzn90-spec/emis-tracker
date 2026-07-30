@@ -12,15 +12,31 @@ const ExcelModule = (() => {
   const COL = {
     nama: "siswadaftar1_nama",
     nisn: "siswa_nisn",
+    nis: "siswa_nis",
+    jenisKelamin: "kelaminjenis_nama",
+    jumlahSaudara: "siswa_jumlahsaudara",
+    anakKe: "siswa_anakke",
     asalSekolah: "sekolahasal_nama",
     kelasNama: "kelas_nama",
     kelasParalel: "kelaspararel_nama",
     kk: "kartukeluarga_nomor",
+    kepalaKeluarga: "kepalakeluarga_nama",
     ayahNama: "ayah_nama",
+    ayahStatus: "ayah_status",
+    ayahTempatLahir: "ayah_tempatlahir",
+    ayahTanggalLahir: "ayah_tanggallahir",
     ayahNik: "ayah_nik",
+    ayahPendidikan: "ayah_pendidikan",
+    ayahPekerjaan: "ayah_pekerjaan",
     ayahTelepon: "ayah_telepon",
     ibuNama: "ibu_nama",
+    ibuStatus: "ibu_status",
+    ibuTempatLahir: "ibu_tempatlahir",
+    ibuTanggalLahir: "ibu_tanggallahir",
     ibuNik: "ibu_nik",
+    ibuPendidikan: "ibu_pendidikan",
+    ibuPekerjaan: "ibu_pekerjaan",
+    ibuTelepon: "ibu_telepon",
     waliTelepon: "wali_telepon",
     alamat: "siswa_alamat",
     domisili: "domisili_alamat",
@@ -50,18 +66,54 @@ const ExcelModule = (() => {
     // (e.g. re-uploading a file shouldn't wipe admin toggles).
     const prevStatus = existingStatusMap && existingStatusMap[id];
 
+    const ayahPekerjaan = Utils.clean(row[COL.ayahPekerjaan]);
+    const ibuPekerjaan = Utils.clean(row[COL.ibuPekerjaan]);
+    const fatherIncome = IncomeRules.classify(ayahPekerjaan);
+    const motherIncome = IncomeRules.classify(ibuPekerjaan);
+    const avgIncome = IncomeRules.combine(fatherIncome.kategori, motherIncome.kategori);
+
     return {
       id,
       nama,
       nisn: nisn || "-",
+      nis: Utils.clean(row[COL.nis]),
+      jenisKelamin: Utils.clean(row[COL.jenisKelamin]),
+      jumlahSaudara: Utils.clean(row[COL.jumlahSaudara]),
+      anakKe: Utils.clean(row[COL.anakKe]),
       asal_sekolah: asalSekolah,
       kelas_paralel: kelasParalel,
       emisStatus: prevStatus || "not_entered", // "entered" | "not_entered"
-      fatherName: Utils.clean(row[COL.ayahNama]),
-      fatherNik: Utils.clean(row[COL.ayahNik]),
-      motherName: Utils.clean(row[COL.ibuNama]),
-      motherNik: Utils.clean(row[COL.ibuNik]),
+
       kk: Utils.clean(row[COL.kk]),
+      kepalaKeluarga: Utils.clean(row[COL.kepalaKeluarga]),
+
+      fatherName: Utils.clean(row[COL.ayahNama]),
+      fatherStatus: Utils.clean(row[COL.ayahStatus]),
+      fatherNik: Utils.clean(row[COL.ayahNik]),
+      fatherBirthplace: Utils.clean(row[COL.ayahTempatLahir]),
+      fatherBirthdate: Utils.clean(row[COL.ayahTanggalLahir]),
+      fatherEducation: Utils.clean(row[COL.ayahPendidikan]),
+      fatherJob: ayahPekerjaan,
+      fatherPhone: Utils.clean(row[COL.ayahTelepon]),
+      fatherIncomeCategory: fatherIncome.kategori,
+      fatherIncomeRange: fatherIncome.range,
+
+      motherName: Utils.clean(row[COL.ibuNama]),
+      motherStatus: Utils.clean(row[COL.ibuStatus]),
+      motherNik: Utils.clean(row[COL.ibuNik]),
+      motherBirthplace: Utils.clean(row[COL.ibuTempatLahir]),
+      motherBirthdate: Utils.clean(row[COL.ibuTanggalLahir]),
+      motherEducation: Utils.clean(row[COL.ibuPendidikan]),
+      motherJob: ibuPekerjaan,
+      motherPhone: Utils.clean(row[COL.ibuTelepon]),
+      motherIncomeCategory: motherIncome.kategori,
+      motherIncomeRange: motherIncome.range,
+
+      avgIncomeCategory: avgIncome.kategori,
+      avgIncomeRange: avgIncome.range,
+
+      // Legacy field name, kept for the old "phone" DB column /
+      // backward compatibility; mirrors fatherPhone.
       phone: Utils.clean(row[COL.ayahTelepon]),
       guardianPhone: Utils.clean(row[COL.waliTelepon]),
       address: Utils.clean(row[COL.alamat]) || Utils.clean(row[COL.domisili]),
@@ -139,7 +191,11 @@ const ExcelModule = (() => {
         const workbook = XLSX.read(data, { type: "array", cellDates: true });
         const sheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+        // raw:false returns each cell's formatted text instead of its raw
+        // numeric value — important for long IDs like NIK/KK/phone numbers,
+        // which otherwise risk precision loss or scientific notation once
+        // they exceed JS's safe integer range.
+        const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
 
         if (!rows.length) {
           Utils.toast("File kosong atau format tidak sesuai.");
