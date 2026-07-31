@@ -8,9 +8,11 @@
    kelas directly:
 
    1. belum_kk   — Belum Mengumpulkan KK
-        Student's own NIK is blank AND both parents' name+NIK
-        are completely blank. Nothing from the family card
-        appears to have been entered at all.
+        Both parents' name+NIK are completely blank — nothing
+        from the family card appears to have been entered at
+        all. (The student's own NIK is usually blank too in
+        this case, but that's not required — parent data being
+        fully blank is enough on its own.)
 
    2. kelewatan  — Kelewatan Input
         Some parent data DOES exist, but either one parent's
@@ -24,6 +26,11 @@
         found, so it needs a human to check and mark which
         one applies — hence the "Tandai Final" buttons rather
         than an automatic verdict.
+
+   Grouped strictly by kelas_paralel (not by sekolah) so every
+   class shows up as a single list, even if the same class
+   name is used at more than one sekolah — each student row
+   still shows their sekolah asal so nothing gets mixed up.
    ========================================================== */
 
 const CompletenessModule = (() => {
@@ -47,7 +54,7 @@ const CompletenessModule = (() => {
     const nisnKosong = isBlank(s.nisn);
 
     const issues = [];
-    if (nikSiswaKosong && ortuFullyEmpty) issues.push("belum_kk");
+    if (ortuFullyEmpty) issues.push("belum_kk");
     if (!ortuFullyEmpty && (namaOrtuSalahSatuKosong || nikSiswaKosong)) issues.push("kelewatan");
     if (nisnKosong) issues.push("nisn");
     return issues;
@@ -65,37 +72,39 @@ const CompletenessModule = (() => {
 
   function computeGroups() {
     const students = Storage.getStudents();
-    const groups = {}; // key: "sekolah|||kelas"
+    const groups = {}; // key: kelas_paralel
 
     students.forEach((s) => {
       const issues = classify(s);
       if (!issues.length) return;
 
-      const key = `${s.asal_sekolah}|||${s.kelas_paralel || "-"}`;
+      const kelas = s.kelas_paralel || "-";
+      const key = kelas;
       if (!groups[key]) {
         groups[key] = {
-          sekolah: s.asal_sekolah,
-          kelas: s.kelas_paralel || "-",
+          kelas,
+          sekolahSet: new Set(),
           belum_kk: [],
           kelewatan: [],
           nisn: [],
         };
       }
+      groups[key].sekolahSet.add(s.asal_sekolah || "-");
       if (issues.includes("belum_kk")) groups[key].belum_kk.push(s);
       if (issues.includes("kelewatan")) groups[key].kelewatan.push(s);
       if (issues.includes("nisn")) groups[key].nisn.push(s);
     });
 
-    return Object.values(groups).sort((a, b) =>
-      a.sekolah.localeCompare(b.sekolah) || a.kelas.localeCompare(b.kelas)
-    );
+    return Object.values(groups)
+      .map((g) => ({ ...g, sekolahList: Array.from(g.sekolahSet).sort() }))
+      .sort((a, b) => a.kelas.localeCompare(b.kelas));
   }
 
   function filterGroups(groups) {
     const q = Utils.norm(state.query);
     if (!q) return groups;
     return groups.filter((g) =>
-      Utils.norm(g.sekolah).includes(q) || Utils.norm(g.kelas).includes(q)
+      Utils.norm(g.kelas).includes(q) || g.sekolahList.some((sk) => Utils.norm(sk).includes(q))
     );
   }
 
@@ -120,36 +129,40 @@ const CompletenessModule = (() => {
   }
 
   function buildMessage(g) {
+    const multiSchool = g.sekolahList.length > 1;
     const lines = [];
-    lines.push(`*Kelas ${g.kelas} — ${g.sekolah}*`);
+    lines.push(`*Kelas ${g.kelas}*${multiSchool ? "" : ` — ${g.sekolahList[0] || "-"}`}`);
     lines.push(`Info kelengkapan data EMIS siswa baru:`);
+
+    const nameLine = (s) => multiSchool ? `${s.nama} (${s.asal_sekolah})` : s.nama;
 
     if (g.belum_kk.length) {
       lines.push(``, `📄 *Belum Mengumpulkan KK* (${g.belum_kk.length}):`);
-      g.belum_kk.forEach((s, i) => lines.push(`${i + 1}. ${s.nama}`));
+      g.belum_kk.forEach((s, i) => lines.push(`${i + 1}. ${nameLine(s)}`));
     }
     if (g.kelewatan.length) {
       lines.push(``, `✏️ *Data Kelewatan Diinput* (${g.kelewatan.length}):`);
       g.kelewatan.forEach((s, i) => {
         const detail = kelewatanDetail(s);
-        lines.push(`${i + 1}. ${s.nama}${detail ? ` — ${detail}` : ""}`);
+        lines.push(`${i + 1}. ${nameLine(s)}${detail ? ` — ${detail}` : ""}`);
       });
     }
     if (g.nisn.length) {
       lines.push(``, `🔎 *NISN Bermasalah/Kosong* (${g.nisn.length}):`);
-      g.nisn.forEach((s, i) => lines.push(`${i + 1}. ${s.nama}`));
+      g.nisn.forEach((s, i) => lines.push(`${i + 1}. ${nameLine(s)}`));
     }
 
     lines.push(``, `Mohon bantu konfirmasi ke wali murid ya, terima kasih 🙏`);
     return lines.join("\n");
   }
 
-  function issueRow(s, opts = {}) {
+  function issueRow(s, opts = {}, showSchool) {
     return `
       <div class="issue-row">
         <div class="issue-row-main">
           <span class="issue-row-name">${Utils.esc(s.nama)}</span>
           <span class="cell-muted">NISN: ${Utils.esc(s.nisn)}</span>
+          ${showSchool ? `<span class="cell-muted">• ${Utils.esc(s.asal_sekolah)}</span>` : ""}
           ${opts.detail ? `<span class="cell-muted">— ${Utils.esc(opts.detail)}</span>` : ""}
         </div>
         <div class="issue-row-actions">
@@ -172,27 +185,28 @@ const CompletenessModule = (() => {
   }
 
   function groupHtml(g) {
+    const showSchool = g.sekolahList.length > 1;
     const sections = [];
 
     if (g.belum_kk.length) {
       sections.push(`
         <div class="issue-section">
           <div class="issue-section-head issue-danger">📄 Belum Mengumpulkan KK <span class="issue-count">${g.belum_kk.length}</span></div>
-          ${g.belum_kk.map((s) => issueRow(s)).join("")}
+          ${g.belum_kk.map((s) => issueRow(s, {}, showSchool)).join("")}
         </div>`);
     }
     if (g.kelewatan.length) {
       sections.push(`
         <div class="issue-section">
           <div class="issue-section-head issue-warning">✏️ Kelewatan Input <span class="issue-count">${g.kelewatan.length}</span></div>
-          ${g.kelewatan.map((s) => issueRow(s, { detail: kelewatanDetail(s) })).join("")}
+          ${g.kelewatan.map((s) => issueRow(s, { detail: kelewatanDetail(s) }, showSchool)).join("")}
         </div>`);
     }
     if (g.nisn.length) {
       sections.push(`
         <div class="issue-section">
           <div class="issue-section-head issue-info">🔎 NISN Bermasalah / Kosong <span class="issue-count">${g.nisn.length}</span></div>
-          ${g.nisn.map((s) => issueRow(s, { nisnActions: true })).join("")}
+          ${g.nisn.map((s) => issueRow(s, { nisnActions: true }, showSchool)).join("")}
         </div>`);
     }
 
@@ -201,7 +215,7 @@ const CompletenessModule = (() => {
         <div class="issue-group-head">
           <div>
             <div class="issue-group-title">Kelas ${Utils.esc(g.kelas)}</div>
-            <div class="small muted">${Utils.esc(g.sekolah)}</div>
+            <div class="small muted">${Utils.esc(g.sekolahList.join(", "))}</div>
           </div>
           <button class="btn btn-outline btn-sm" data-copy-msg="1">⧉ Salin Pesan untuk Wali Kelas</button>
         </div>
