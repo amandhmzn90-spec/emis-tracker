@@ -13,6 +13,7 @@ const ExcelModule = (() => {
     nama: "siswadaftar1_nama",
     nisn: "siswa_nisn",
     nis: "siswa_nis",
+    siswaNik: "siswa_nik",
     jenisKelamin: "kelaminjenis_nama",
     jumlahSaudara: "siswa_jumlahsaudara",
     anakKe: "siswa_anakke",
@@ -62,9 +63,11 @@ const ExcelModule = (() => {
     const regId = Utils.clean(row[COL.regId]);
     const id = regId || nisn || Utils.uid("siswa");
 
-    // Preserve a previously-set EMIS status if this student already existed
-    // (e.g. re-uploading a file shouldn't wipe admin toggles).
-    const prevStatus = existingStatusMap && existingStatusMap[id];
+    // Preserve a previously-set EMIS status and NISN-issue resolution if
+    // this student already existed (e.g. re-uploading a file shouldn't
+    // wipe admin toggles).
+    const prev = existingStatusMap && existingStatusMap[id];
+    const prevStatus = prev && prev.emisStatus;
 
     const ayahPekerjaan = Utils.clean(row[COL.ayahPekerjaan]);
     const ibuPekerjaan = Utils.clean(row[COL.ibuPekerjaan]);
@@ -77,12 +80,14 @@ const ExcelModule = (() => {
       nama,
       nisn: nisn || "-",
       nis: Utils.clean(row[COL.nis]),
+      siswaNik: Utils.clean(row[COL.siswaNik]),
       jenisKelamin: Utils.clean(row[COL.jenisKelamin]),
       jumlahSaudara: Utils.clean(row[COL.jumlahSaudara]),
       anakKe: Utils.clean(row[COL.anakKe]),
       asal_sekolah: asalSekolah,
       kelas_paralel: kelasParalel,
       emisStatus: prevStatus || "not_entered", // "entered" | "not_entered"
+      nisnIssueStatus: (prev && prev.nisnIssueStatus) || "", // "" | "not_found" | "no_kk"
 
       kk: Utils.clean(row[COL.kk]),
       kepalaKeluarga: Utils.clean(row[COL.kepalaKeluarga]),
@@ -155,7 +160,7 @@ const ExcelModule = (() => {
     const existingStudents = Storage.getStudents();
     const existingSchools = Storage.getSchools();
     const statusMap = {};
-    existingStudents.forEach((s) => (statusMap[s.id] = s.emisStatus));
+    existingStudents.forEach((s) => (statusMap[s.id] = { emisStatus: s.emisStatus, nisnIssueStatus: s.nisnIssueStatus }));
 
     const students = rows
       .map((r) => mapRowToStudent(r, statusMap))
