@@ -223,6 +223,7 @@ select:focus, .search-mini:focus-within{border-color:var(--primary);}
 }
 .badge-success{background:var(--success-light); color:#15803d;}
 .badge-warning{background:var(--warning-light); color:#b45309;}
+.badge-danger{background:var(--danger-light); color:var(--danger);}
 .badge-dot{width:6px; height:6px; border-radius:50%; background:currentColor;}
 
 .link-btn{background:none; border:none; color:var(--primary); font-weight:600; cursor:pointer; font-size:12.8px; padding:0;}
@@ -396,3 +397,18 @@ select:focus, .search-mini:focus-within{border-color:var(--primary);}
   .modal-box{box-shadow:none; max-height:none; overflow:visible; width:100%;}
   .modal-head-actions, .modal-close{display:none;}
 }
+
+/* ---------- KELENGKAPAN DATA (completeness) ---------- */
+.issue-group-head{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding-bottom:12px; margin-bottom:4px; border-bottom:1px solid var(--border);}
+.issue-group-title{font-weight:800; font-size:16px;}
+.issue-section{margin-top:14px;}
+.issue-section-head{display:flex; align-items:center; gap:8px; font-weight:700; font-size:13.5px; margin-bottom:8px;}
+.issue-section-head.issue-danger{color:var(--danger);}
+.issue-section-head.issue-warning{color:#b45309;}
+.issue-section-head.issue-info{color:var(--primary-dark);}
+.issue-count{background:var(--surface-alt,#f1f5f9); color:var(--text-muted); border-radius:999px; padding:1px 9px; font-size:12px; font-weight:700;}
+.issue-row{display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:9px 0; border-bottom:1px dashed var(--border);}
+.issue-row:last-child{border-bottom:none;}
+.issue-row-main{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+.issue-row-name{font-weight:600;}
+.issue-row-actions{display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end;}
