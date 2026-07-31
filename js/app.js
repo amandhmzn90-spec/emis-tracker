@@ -7,7 +7,7 @@
 
 (function () {
 
-  const pages = ["dashboard", "schools", "queue", "dailycheck", "students", "classes"];
+  const pages = ["dashboard", "schools", "queue", "dailycheck", "students", "classes", "completeness"];
 
   function currentPageId() {
     const el = document.querySelector(".nav-item.active");
@@ -37,6 +37,7 @@
     if (pageId === "dailycheck") DailyCheckModule.render();
     if (pageId === "students") StudentModule.render();
     if (pageId === "classes") ClassModule.render();
+    if (pageId === "completeness") CompletenessModule.render();
   }
 
   function bindNav() {
@@ -93,6 +94,7 @@
     StudentModule.render();
     ClassModule.reset();
     ClassModule.render();
+    CompletenessModule.render();
   }
 
   // Lighter refresh: used when data changes arrive from a coworker via
@@ -104,6 +106,7 @@
     renderPage(currentPageId());
     QueueModule.updateBadge();
     DailyCheckModule.updateBadge();
+    CompletenessModule.updateBadge();
   }
 
   function showLoading(message) {
@@ -153,9 +156,11 @@
     StudentModule.bindToolbar();
     ClassModule.bindToolbar();
     DailyCheckModule.bindToolbar();
+    CompletenessModule.bindToolbar();
     ModalModule.bind();
     QueueModule.updateBadge();
     DailyCheckModule.updateBadge();
+    CompletenessModule.updateBadge();
 
     Storage.subscribeRealtime(() => {
       softRefresh();
