@@ -47,5 +47,22 @@ const Utils = (() => {
     el._t = setTimeout(() => el.classList.remove("show"), 2200);
   }
 
-  return { uid, clean, esc, debounce, norm, toast };
+  // Copy text to the clipboard, with a fallback for non-HTTPS/older browsers.
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      return navigator.clipboard.writeText(text);
+    }
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+    document.body.removeChild(ta);
+    return Promise.resolve();
+  }
+
+  return { uid, clean, esc, debounce, norm, toast, copyText };
 })();
