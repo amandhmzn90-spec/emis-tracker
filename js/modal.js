@@ -39,6 +39,7 @@ const ModalModule = (() => {
         ${field("Nama Siswa", student.nama)}
         ${field("Nomor Induk Siswa (NIS)", student.nis)}
         ${field("NISN", student.nisn)}
+        ${field("NIK Siswa", student.siswaNik)}
         ${field("Jenis Kelamin", student.jenisKelamin)}
         ${field("Sekolah Asal", student.asal_sekolah)}
         ${field("Kelas", student.kelas_paralel)}
