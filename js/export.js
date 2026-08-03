@@ -22,6 +22,8 @@ const ExportModule = (() => {
       "NIS": s.nis || "",
       "NISN": s.nisn,
       "Jenis Kelamin": s.jenisKelamin || "",
+      "Tempat Lahir": s.siswaTempatLahir || "",
+      "Tanggal Lahir": s.siswaTanggalLahir || "",
       "Sekolah Asal": s.asal_sekolah,
       "Kelas": s.kelas_paralel,
       "Jumlah Saudara": s.jumlahSaudara || "",
