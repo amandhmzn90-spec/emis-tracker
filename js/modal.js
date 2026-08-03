@@ -68,6 +68,8 @@ const ModalModule = (() => {
         ${field("NISN", student.nisn === "-" ? "" : student.nisn, tracker)}
         ${field("NIK Siswa", student.siswaNik, tracker)}
         ${field("Jenis Kelamin", student.jenisKelamin, tracker)}
+        ${field("Tempat Lahir", student.siswaTempatLahir, tracker)}
+        ${field("Tanggal Lahir", student.siswaTanggalLahir, tracker)}
         ${field("Sekolah Asal", student.asal_sekolah)}
         ${field("Kelas", student.kelas_paralel)}
         ${field("Jumlah Saudara", student.jumlahSaudara, tracker)}
